@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PucePark · Administración</title>
+<style>
+  :root{--bg:#0B1120;--surface:#141E35;--card:#1C2A4A;--accent:#2563EB;--accent2:#3B82F6;
+        --green:#22C55E;--red:#EF4444;--gold:#F59E0B;--text:#fff;--muted:rgba(255,255,255,.6)}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  body{background:var(--bg);color:var(--text);min-height:100vh}
+  .wrap{max-width:900px;margin:0 auto;padding:24px 18px 60px}
+  header.top{display:flex;align-items:center;gap:12px;padding:18px 0;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:22px}
+  .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--accent),#0891B2);display:flex;align-items:center;justify-content:center;font-size:20px}
+  h1{font-size:20px;font-weight:800}h1 span{color:var(--accent2)}
+  .muted{color:var(--muted);font-size:13px}
+  .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;margin-bottom:16px}
+  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+  input,select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:var(--surface);color:var(--text);font-size:14px}
+  button{cursor:pointer;border:none;border-radius:10px;font-weight:700;font-size:14px;padding:11px 16px;color:#fff;background:var(--accent)}
+  button:hover{background:#1d4ed8}button:disabled{opacity:.5;cursor:default}
+  button.ghost{background:transparent;border:1.5px solid var(--accent2);color:var(--accent2)}
+  button.danger{background:transparent;border:1.5px solid var(--red);color:var(--red);padding:8px 10px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .grow{flex:1;min-width:120px}
+  .msg{padding:10px 12px;border-radius:8px;font-size:13px;margin:10px 0}
+  .err{background:rgba(239,68,68,.12);color:#fca5a5}
+  .ok{background:rgba(34,197,94,.12);color:#86efac}
+  .zona{background:var(--surface);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+  .zona h3{font-size:16px}.zona .sub{color:var(--muted);font-size:12px;margin-top:2px}
+  .zhead{display:flex;justify-content:space-between;align-items:flex-start}
+  .pill{font-size:12px;font-weight:700;color:var(--accent2)}
+  .actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .hidden{display:none}
+  h2{font-size:15px;margin-bottom:6px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:560px){.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="logo">🅿️</div>
+    <div>
+      <h1>Puce<span>Park</span> · Administración</h1>
+      <div class="muted" id="whoami">Panel de gestión de zonas y puestos</div>
+    </div>
+    <div style="margin-left:auto"><button id="logoutBtn" class="ghost hidden" onclick="logout()">Cerrar sesión</button></div>
+  </header>
+
+  <!-- LOGIN -->
+  <div id="loginCard" class="card">
+    <h2>Iniciar sesión (Administrador)</h2>
+    <label>Usuario (email)</label>
+    <input id="user" type="text" placeholder="admin@puce.edu.ec" autocomplete="username" />
+    <label>Contraseña</label>
+    <input id="pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()" />
+    <div id="loginMsg"></div>
+    <div style="margin-top:14px"><button id="loginBtn" onclick="login()">Entrar</button></div>
+  </div>
+
+  <!-- PANEL -->
+  <div id="panel" class="hidden">
+    <div id="globalMsg"></div>
+
+    <div class="card">
+      <h2>Nueva zona</h2>
+      <div class="grid2">
+        <div><label>Nombre</label><input id="zName" placeholder="Zona D" /></div>
+        <div><label>Ubicación</label><input id="zLoc" placeholder="Bloque D, subsuelo" /></div>
+        <div><label>Descripción</label><input id="zDesc" placeholder="Zona oeste" /></div>
+        <div><label>Capacidad máxima</label><input id="zCap" type="number" min="1" placeholder="30" /></div>
+      </div>
+      <div style="margin-top:12px"><button onclick="crearZona()">Crear zona</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Agregar puesto a una zona</h2>
+      <div class="grid2">
+        <div><label>Zona</label><select id="pZona"></select></div>
+        <div><label>Número (ej. A-31)</label><input id="pNum" placeholder="A-31" /></div>
+        <div><label>Fila (ej. A)</label><input id="pRow" placeholder="A" /></div>
+        <div><label>Orden (ej. 31)</label><input id="pOrder" type="number" min="1" placeholder="31" /></div>
+      </div>
+      <div style="margin-top:12px"><button onclick="crearPuesto()">Crear puesto</button></div>
+    </div>
+
+    <h2 style="margin:18px 0 8px">Zonas</h2>
+    <div id="zonasList"></div>
+  </div>
+</div>
+
+<script>
+const COGNITO = { region:'us-east-1', clientId:'4vhmgbe076v27ub5mu9ru8jo8l' };
+let TOKEN = null;
+
+const $ = id => document.getElementById(id);
+function show(el){el.classList.remove('hidden')} function hide(el){el.classList.add('hidden')}
+function msg(el, text, kind){ el.innerHTML = text ? `<div class="msg ${kind}">${text}</div>` : ''; }
+
+function jwtPayload(t){ try{ return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); }catch(e){ return {}; } }
+
+async function login(){
+  const u = $('user').value.trim(), p = $('pass').value;
+  if(!u || !p){ msg($('loginMsg'),'Ingresa usuario y contraseña','err'); return; }
+  $('loginBtn').disabled = true; msg($('loginMsg'),'Entrando…','ok');
+  try{
+    const res = await fetch(`https://cognito-idp.${COGNITO.region}.amazonaws.com/`, {
+      method:'POST',
+      headers:{'Content-Type':'application/x-amz-json-1.1','X-Amz-Target':'AWSCognitoIdentityProviderService.InitiateAuth'},
+      body: JSON.stringify({AuthFlow:'USER_PASSWORD_AUTH', ClientId:COGNITO.clientId, AuthParameters:{USERNAME:u, PASSWORD:p}})
+    });
+    const data = await res.json();
+    if(!res.ok){ throw new Error(data.message || 'Credenciales inválidas'); }
+    const token = data.AuthenticationResult.IdToken;
+    const groups = jwtPayload(token)['cognito:groups'] || [];
+    if(!groups.includes('ADMIN')){ throw new Error('Este usuario no es ADMIN. Solo un administrador puede entrar.'); }
+    TOKEN = token;
+    $('whoami').textContent = (jwtPayload(token).email || u) + ' · ADMIN';
+    hide($('loginCard')); show($('panel')); show($('logoutBtn'));
+    await loadZonas();
+  }catch(e){ msg($('loginMsg'), e.message, 'err'); }
+  finally{ $('loginBtn').disabled = false; }
+}
+
+function logout(){ TOKEN=null; show($('loginCard')); hide($('panel')); hide($('logoutBtn')); $('pass').value=''; msg($('loginMsg'),'',''); }
+
+async function api(path, method='GET', body=null){
+  const opt = { method, headers:{ 'Authorization':'Bearer '+TOKEN } };
+  if(body){ opt.headers['Content-Type']='application/json'; opt.body=JSON.stringify(body); }
+  const res = await fetch(path, opt);
+  if(res.status===401){ logout(); throw new Error('Sesión expirada, vuelve a entrar'); }
+  if(res.status===204) return null;
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok){ throw new Error(data.message || ('Error '+res.status)); }
+  return data;
+}
+
+async function loadZonas(){
+  try{
+    const zonas = await api('/api/v1/zonas');
+    // llenar select
+    $('pZona').innerHTML = zonas.map(z=>`<option value="${z.id}">${z.name}</option>`).join('');
+    // lista
+    $('zonasList').innerHTML = zonas.map(z=>`
+      <div class="zona">
+        <div class="zhead">
+          <div><h3>${z.name}</h3><div class="sub">${z.location||''} · ${z.description||''}</div></div>
+          <div class="pill">${z.occupiedSpaces}/${z.totalSpaces}</div>
+        </div>
+        <div class="actions">
+          <button class="danger" onclick="eliminarZona(${z.id}, '${z.name.replace(/'/g,"")}')">🗑 Eliminar zona</button>
+        </div>
+      </div>`).join('') || '<div class="muted">Sin zonas.</div>';
+  }catch(e){ msg($('globalMsg'), e.message, 'err'); }
+}
+
+async function crearZona(){
+  const name=$('zName').value.trim(), cap=parseInt($('zCap').value||'0',10);
+  if(name.length<2 || cap<1){ msg($('globalMsg'),'Nombre (2+) y capacidad (1+) requeridos','err'); return; }
+  try{
+    await api('/api/v1/zonas','POST',{ name, description:$('zDesc').value, location:$('zLoc').value, maxCapacity:cap });
+    $('zName').value=$('zDesc').value=$('zLoc').value=$('zCap').value='';
+    msg($('globalMsg'),`Zona "${name}" creada`,'ok'); await loadZonas();
+  }catch(e){ msg($('globalMsg'), e.message, 'err'); }
+}
+
+async function crearPuesto(){
+  const zoneId=parseInt($('pZona').value,10), spaceNumber=$('pNum').value.trim().toUpperCase(),
+        row=$('pRow').value.trim().toUpperCase(), order=parseInt($('pOrder').value||'0',10);
+  if(!zoneId || !spaceNumber || !row || order<1){ msg($('globalMsg'),'Completa zona, número, fila y orden','err'); return; }
+  try{
+    await api('/api/v1/puestos','POST',{ zoneId, spaceNumber, row, order });
+    $('pNum').value=$('pRow').value=$('pOrder').value='';
+    msg($('globalMsg'),`Puesto "${spaceNumber}" creado`,'ok'); await loadZonas();
+  }catch(e){ msg($('globalMsg'), e.message, 'err'); }
+}
+
+async function eliminarZona(id, name){
+  if(!confirm(`¿Eliminar la zona "${name}"?`)) return;
+  try{ await api('/api/v1/zonas/'+id,'DELETE'); msg($('globalMsg'),`Zona "${name}" eliminada`,'ok'); await loadZonas(); }
+  catch(e){ msg($('globalMsg'), e.message, 'err'); }
+}
+</script>
+</body>
+</html>
