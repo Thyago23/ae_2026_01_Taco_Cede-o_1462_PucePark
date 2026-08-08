@@ -9,7 +9,7 @@
         --green:#22C55E;--red:#EF4444;--gold:#F59E0B;--text:#fff;--muted:rgba(255,255,255,.6)}
   *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
   body{background:var(--bg);color:var(--text);min-height:100vh}
-  .wrap{max-width:900px;margin:0 auto;padding:24px 18px 60px}
+  .wrap{max-width:940px;margin:0 auto;padding:24px 18px 60px}
   header.top{display:flex;align-items:center;gap:12px;padding:18px 0;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:22px}
   .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--accent),#0891B2);display:flex;align-items:center;justify-content:center;font-size:20px}
   h1{font-size:20px;font-weight:800}h1 span{color:var(--accent2)}
@@ -17,24 +17,33 @@
   .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;margin-bottom:16px}
   label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
   input,select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:var(--surface);color:var(--text);font-size:14px}
-  button{cursor:pointer;border:none;border-radius:10px;font-weight:700;font-size:14px;padding:11px 16px;color:#fff;background:var(--accent)}
-  button:hover{background:#1d4ed8}button:disabled{opacity:.5;cursor:default}
+  button{cursor:pointer;border:none;border-radius:10px;font-weight:700;font-size:13px;padding:10px 14px;color:#fff;background:var(--accent)}
+  button:hover{filter:brightness(1.1)}button:disabled{opacity:.5;cursor:default}
   button.ghost{background:transparent;border:1.5px solid var(--accent2);color:var(--accent2)}
-  button.danger{background:transparent;border:1.5px solid var(--red);color:var(--red);padding:8px 10px}
-  .row{display:flex;gap:10px;flex-wrap:wrap}
-  .grow{flex:1;min-width:120px}
+  button.green{background:transparent;border:1.5px solid var(--green);color:var(--green)}
+  button.gold{background:transparent;border:1.5px solid var(--gold);color:var(--gold)}
+  button.danger{background:transparent;border:1.5px solid var(--red);color:var(--red)}
+  button.sm{padding:6px 10px;font-size:12px;border-radius:8px}
   .msg{padding:10px 12px;border-radius:8px;font-size:13px;margin:10px 0}
   .err{background:rgba(239,68,68,.12);color:#fca5a5}
   .ok{background:rgba(34,197,94,.12);color:#86efac}
   .zona{background:var(--surface);border-radius:12px;padding:14px 16px;margin-bottom:10px}
   .zona h3{font-size:16px}.zona .sub{color:var(--muted);font-size:12px;margin-top:2px}
-  .zhead{display:flex;justify-content:space-between;align-items:flex-start}
-  .pill{font-size:12px;font-weight:700;color:var(--accent2)}
+  .zhead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .pill{font-size:12px;font-weight:700;color:var(--accent2);white-space:nowrap}
   .actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
   .hidden{display:none}
   h2{font-size:15px;margin-bottom:6px}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   @media(max-width:560px){.grid2{grid-template-columns:1fr}}
+  .box{margin-top:12px;padding:12px;border-radius:10px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06)}
+  .puesto{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.05);flex-wrap:wrap}
+  .puesto:last-child{border-bottom:none}
+  .pnum{font-weight:700;min-width:60px}
+  .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
+  .badge.disp{background:rgba(34,197,94,.15);color:#86efac}
+  .badge.ocup{background:rgba(239,68,68,.15);color:#fca5a5}
+  .pactions{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -93,11 +102,12 @@
 <script>
 const COGNITO = { region:'us-east-1', clientId:'4vhmgbe076v27ub5mu9ru8jo8l' };
 let TOKEN = null;
+let ZONAS = [];               // cache de zonas para editar sin re-fetch
 
 const $ = id => document.getElementById(id);
 function show(el){el.classList.remove('hidden')} function hide(el){el.classList.add('hidden')}
 function msg(el, text, kind){ el.innerHTML = text ? `<div class="msg ${kind}">${text}</div>` : ''; }
-
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function jwtPayload(t){ try{ return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); }catch(e){ return {}; } }
 
 async function login(){
@@ -136,23 +146,34 @@ async function api(path, method='GET', body=null){
   return data;
 }
 
+// ── Zonas ────────────────────────────────────────────────────────────────────
 async function loadZonas(){
   try{
-    const zonas = await api('/api/v1/zonas');
-    // llenar select
-    $('pZona').innerHTML = zonas.map(z=>`<option value="${z.id}">${z.name}</option>`).join('');
-    // lista
-    $('zonasList').innerHTML = zonas.map(z=>`
-      <div class="zona">
+    ZONAS = await api('/api/v1/zonas');
+    $('pZona').innerHTML = ZONAS.map(z=>`<option value="${z.id}">${esc(z.name)}</option>`).join('');
+    $('zonasList').innerHTML = ZONAS.map(z=>`
+      <div class="zona" data-id="${z.id}">
         <div class="zhead">
-          <div><h3>${z.name}</h3><div class="sub">${z.location||''} · ${z.description||''}</div></div>
+          <div><h3>${esc(z.name)}</h3><div class="sub">${esc(z.location)||'—'} · ${esc(z.description)||'—'} · cap. ${z.maxCapacity}</div></div>
           <div class="pill">${z.occupiedSpaces}/${z.totalSpaces}</div>
         </div>
         <div class="actions">
-          <button class="danger" onclick="eliminarZona(${z.id}, '${z.name.replace(/'/g,"")}')">🗑 Eliminar zona</button>
+          <button class="ghost sm" onclick="toggleEdit(${z.id})">✏️ Editar zona</button>
+          <button class="ghost sm" onclick="togglePuestos(${z.id})">🅿️ Ver puestos</button>
+          <button class="danger sm" onclick="eliminarZona(${z.id})">🗑 Eliminar zona</button>
         </div>
+        <div id="edit-${z.id}" class="box hidden"></div>
+        <div id="puestos-${z.id}" class="box hidden"></div>
       </div>`).join('') || '<div class="muted">Sin zonas.</div>';
   }catch(e){ msg($('globalMsg'), e.message, 'err'); }
+}
+
+async function updatePills(){
+  try{
+    ZONAS = await api('/api/v1/zonas');
+    ZONAS.forEach(z=>{ const el=document.querySelector(`.zona[data-id="${z.id}"] .pill`); if(el) el.textContent=`${z.occupiedSpaces}/${z.totalSpaces}`; });
+    $('pZona').innerHTML = ZONAS.map(z=>`<option value="${z.id}">${esc(z.name)}</option>`).join('');
+  }catch(e){}
 }
 
 async function crearZona(){
@@ -161,10 +182,46 @@ async function crearZona(){
   try{
     await api('/api/v1/zonas','POST',{ name, description:$('zDesc').value, location:$('zLoc').value, maxCapacity:cap });
     $('zName').value=$('zDesc').value=$('zLoc').value=$('zCap').value='';
-    msg($('globalMsg'),`Zona "${name}" creada`,'ok'); await loadZonas();
+    msg($('globalMsg'),`Zona "${esc(name)}" creada`,'ok'); await loadZonas();
   }catch(e){ msg($('globalMsg'), e.message, 'err'); }
 }
 
+function toggleEdit(id){
+  const box=$('edit-'+id);
+  if(!box.classList.contains('hidden')){ hide(box); box.innerHTML=''; return; }
+  const z=ZONAS.find(x=>x.id===id); if(!z) return;
+  box.innerHTML=`
+    <div class="grid2">
+      <div><label>Nombre</label><input id="e-name-${id}" value="${esc(z.name)}" /></div>
+      <div><label>Ubicación</label><input id="e-loc-${id}" value="${esc(z.location)}" /></div>
+      <div><label>Descripción</label><input id="e-desc-${id}" value="${esc(z.description)}" /></div>
+      <div><label>Capacidad máxima</label><input id="e-cap-${id}" type="number" min="1" value="${z.maxCapacity}" /></div>
+    </div>
+    <div class="actions">
+      <button class="green sm" onclick="guardarEdit(${id})">💾 Guardar cambios</button>
+      <button class="ghost sm" onclick="toggleEdit(${id})">Cancelar</button>
+    </div>`;
+  show(box);
+}
+
+async function guardarEdit(id){
+  const name=$('e-name-'+id).value.trim(), cap=parseInt($('e-cap-'+id).value||'0',10);
+  if(name.length<2 || cap<1){ msg($('globalMsg'),'Nombre (2+) y capacidad (1+) requeridos','err'); return; }
+  try{
+    await api('/api/v1/zonas/'+id,'PUT',{ name, description:$('e-desc-'+id).value, location:$('e-loc-'+id).value, maxCapacity:cap });
+    msg($('globalMsg'),`Zona "${esc(name)}" actualizada`,'ok'); await loadZonas();
+  }catch(e){ msg($('globalMsg'), e.message, 'err'); }
+}
+
+async function eliminarZona(id){
+  const z=ZONAS.find(x=>x.id===id); const name=z?z.name:('#'+id);
+  if(z && z.totalSpaces>0){ msg($('globalMsg'),`La zona "${esc(name)}" tiene ${z.totalSpaces} puesto(s). Elimínalos primero (Ver puestos).`,'err'); return; }
+  if(!confirm(`¿Eliminar la zona "${name}"?`)) return;
+  try{ await api('/api/v1/zonas/'+id,'DELETE'); msg($('globalMsg'),`Zona "${esc(name)}" eliminada`,'ok'); await loadZonas(); }
+  catch(e){ msg($('globalMsg'), e.message, 'err'); }
+}
+
+// ── Puestos ──────────────────────────────────────────────────────────────────
 async function crearPuesto(){
   const zoneId=parseInt($('pZona').value,10), spaceNumber=$('pNum').value.trim().toUpperCase(),
         row=$('pRow').value.trim().toUpperCase(), order=parseInt($('pOrder').value||'0',10);
@@ -172,13 +229,68 @@ async function crearPuesto(){
   try{
     await api('/api/v1/puestos','POST',{ zoneId, spaceNumber, row, order });
     $('pNum').value=$('pRow').value=$('pOrder').value='';
-    msg($('globalMsg'),`Puesto "${spaceNumber}" creado`,'ok'); await loadZonas();
+    msg($('globalMsg'),`Puesto "${esc(spaceNumber)}" creado`,'ok');
+    await updatePills();
+    const box=$('puestos-'+zoneId); if(box && !box.classList.contains('hidden')) await loadPuestos(zoneId);
   }catch(e){ msg($('globalMsg'), e.message, 'err'); }
 }
 
-async function eliminarZona(id, name){
-  if(!confirm(`¿Eliminar la zona "${name}"?`)) return;
-  try{ await api('/api/v1/zonas/'+id,'DELETE'); msg($('globalMsg'),`Zona "${name}" eliminada`,'ok'); await loadZonas(); }
+async function togglePuestos(id){
+  const box=$('puestos-'+id);
+  if(!box.classList.contains('hidden')){ hide(box); box.innerHTML=''; return; }
+  await loadPuestos(id); show(box);
+}
+
+async function loadPuestos(id){
+  const box=$('puestos-'+id);
+  try{
+    const puestos = await api('/api/v1/puestos/zona/'+id);
+    if(!puestos.length){ box.innerHTML='<div class="muted">Esta zona no tiene puestos.</div>'; return; }
+    box.innerHTML = puestos.map(p=>{
+      const ocup = p.status==='OCUPADO';
+      const num = esc(p.spaceNumber);
+      return `<div class="puesto">
+        <span class="pnum">${num}</span>
+        <span class="badge ${ocup?'ocup':'disp'}">${ocup?'OCUPADO':'DISPONIBLE'}</span>
+        <div class="pactions">
+          <button class="ghost sm" onclick="renombrarPuesto(${p.id}, '${num}', ${id})">✏️</button>
+          ${ocup
+            ? `<button class="gold sm" onclick="liberarAdmin(${p.id}, ${id})">🔓 Liberar</button>`
+            : `<button class="green sm" onclick="ocuparAdmin(${p.id}, ${id})">🚗 Ocupar</button>`}
+          <button class="danger sm" onclick="eliminarPuesto(${p.id}, '${num}', ${id})">🗑</button>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){ box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
+}
+
+async function renombrarPuesto(id, current, zonaId){
+  const nuevo = prompt('Nuevo número del puesto:', current);
+  if(nuevo==null) return;
+  const spaceNumber = nuevo.trim().toUpperCase();
+  if(!spaceNumber){ msg($('globalMsg'),'El número no puede estar vacío','err'); return; }
+  try{ await api('/api/v1/puestos/'+id,'PUT',{ spaceNumber }); msg($('globalMsg'),`Puesto renombrado a "${esc(spaceNumber)}"`,'ok'); await loadPuestos(zonaId); }
+  catch(e){ msg($('globalMsg'), e.message, 'err'); }
+}
+
+async function ocuparAdmin(id, zonaId){
+  const placa = prompt('Placa del vehículo (ocupación forzada):', '');
+  if(placa==null) return;
+  const vehiclePlate = placa.trim().toUpperCase();
+  if(!vehiclePlate){ msg($('globalMsg'),'La placa no puede estar vacía','err'); return; }
+  try{ await api('/api/v1/puestos/'+id+'/forzar-ocupacion','PUT',{ vehiclePlate }); msg($('globalMsg'),`Puesto ocupado (placa ${esc(vehiclePlate)})`,'ok'); await loadPuestos(zonaId); await updatePills(); }
+  catch(e){ msg($('globalMsg'), e.message, 'err'); }
+}
+
+async function liberarAdmin(id, zonaId){
+  if(!confirm('¿Liberar este puesto (liberación forzada)?')) return;
+  try{ await api('/api/v1/puestos/'+id+'/forzar-liberacion','PUT'); msg($('globalMsg'),'Puesto liberado','ok'); await loadPuestos(zonaId); await updatePills(); }
+  catch(e){ msg($('globalMsg'), e.message, 'err'); }
+}
+
+async function eliminarPuesto(id, num, zonaId){
+  if(!confirm(`¿Eliminar el puesto "${num}"? (se borra también su historial)`)) return;
+  try{ await api('/api/v1/puestos/'+id,'DELETE'); msg($('globalMsg'),`Puesto "${esc(num)}" eliminado`,'ok'); await loadPuestos(zonaId); await updatePills(); }
   catch(e){ msg($('globalMsg'), e.message, 'err'); }
 }
 </script>

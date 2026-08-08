@@ -221,6 +221,36 @@ class PuestoParqueoServiceTest {
     }
 
     @Test
+    fun `deletePuesto elimina el puesto y su historial cuando esta disponible`() {
+        val historial = HistorialParqueo(id = 1L, puesto = puestoDisponible, username = "jdoe")
+        whenever(puestoParqueoRepository.findById(1L)).thenReturn(Optional.of(puestoDisponible))
+        whenever(historialParqueoRepository.findByPuestoIdOrderByFechaIngresoDesc(1L)).thenReturn(listOf(historial))
+
+        puestoParqueoService.deletePuesto(1L)
+
+        org.mockito.Mockito.verify(historialParqueoRepository).deleteAll(listOf(historial))
+        org.mockito.Mockito.verify(puestoParqueoRepository).delete(puestoDisponible)
+    }
+
+    @Test
+    fun `deletePuesto lanza PuestoParqueoNotFoundException cuando el puesto no existe`() {
+        whenever(puestoParqueoRepository.findById(99L)).thenReturn(Optional.empty())
+
+        assertThrows<PuestoParqueoNotFoundException> {
+            puestoParqueoService.deletePuesto(99L)
+        }
+    }
+
+    @Test
+    fun `deletePuesto lanza SlotAlreadyOccupiedException cuando el puesto esta ocupado`() {
+        whenever(puestoParqueoRepository.findById(2L)).thenReturn(Optional.of(puestoOcupado))
+
+        assertThrows<SlotAlreadyOccupiedException> {
+            puestoParqueoService.deletePuesto(2L)
+        }
+    }
+
+    @Test
     fun `liberarPuesto permite al guard liberar un puesto de otro usuario`() {
         val historial = HistorialParqueo(id = 1L, puesto = puestoOcupado, username = "otro_usuario")
         whenever(puestoParqueoRepository.findByIdWithPessimisticLock(2L)).thenReturn(Optional.of(puestoOcupado))
