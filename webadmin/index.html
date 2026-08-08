@@ -44,6 +44,14 @@
   .badge.disp{background:rgba(34,197,94,.15);color:#86efac}
   .badge.ocup{background:rgba(239,68,68,.15);color:#fca5a5}
   .pactions{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+  .rankrow{display:flex;align-items:center;gap:12px;padding:9px 6px;border-bottom:1px solid rgba(255,255,255,.05)}
+  .rankrow:last-child{border-bottom:none}
+  .rpos{width:34px;height:34px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+  .rpos.g1{background:rgba(245,158,11,.2);color:var(--gold)} .rpos.g2{background:rgba(148,163,184,.2);color:#cbd5e1} .rpos.g3{background:rgba(205,127,50,.2);color:#e0a070}
+  .rname{font-weight:700} .rmeta{margin-left:auto;text-align:right;font-size:12px}
+  .rmeta b{font-size:14px}
+  .hrow{font-size:12px;padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;gap:10px;flex-wrap:wrap}
+  .hrow:last-child{border-bottom:none} .hrow .hu{font-weight:700;min-width:120px} .hrow .hd{color:var(--muted)}
 </style>
 </head>
 <body>
@@ -94,6 +102,16 @@
       <div style="margin-top:12px"><button onclick="crearPuesto()">Crear puesto</button></div>
     </div>
 
+    <div class="card">
+      <h2>Ranking mensual</h2>
+      <div class="row" style="align-items:flex-end">
+        <div class="grow" style="max-width:200px"><label>Mes</label><input id="rankMonth" type="month" /></div>
+        <button onclick="loadRanking()">Ver ranking</button>
+      </div>
+      <div id="rankMsg"></div>
+      <div id="rankBody" class="box" style="margin-top:12px"></div>
+    </div>
+
     <h2 style="margin:18px 0 8px">Zonas</h2>
     <div id="zonasList"></div>
   </div>
@@ -128,7 +146,9 @@ async function login(){
     TOKEN = token;
     $('whoami').textContent = (jwtPayload(token).email || u) + ' · ADMIN';
     hide($('loginCard')); show($('panel')); show($('logoutBtn'));
+    const now = new Date(); $('rankMonth').value = now.toISOString().slice(0,7);
     await loadZonas();
+    await loadRanking();
   }catch(e){ msg($('loginMsg'), e.message, 'err'); }
   finally{ $('loginBtn').disabled = false; }
 }
@@ -249,16 +269,20 @@ async function loadPuestos(id){
     box.innerHTML = puestos.map(p=>{
       const ocup = p.status==='OCUPADO';
       const num = esc(p.spaceNumber);
-      return `<div class="puesto">
-        <span class="pnum">${num}</span>
-        <span class="badge ${ocup?'ocup':'disp'}">${ocup?'OCUPADO':'DISPONIBLE'}</span>
-        <div class="pactions">
-          <button class="ghost sm" onclick="renombrarPuesto(${p.id}, '${num}', ${id})">✏️</button>
-          ${ocup
-            ? `<button class="gold sm" onclick="liberarAdmin(${p.id}, ${id})">🔓 Liberar</button>`
-            : `<button class="green sm" onclick="ocuparAdmin(${p.id}, ${id})">🚗 Ocupar</button>`}
-          <button class="danger sm" onclick="eliminarPuesto(${p.id}, '${num}', ${id})">🗑</button>
+      return `<div>
+        <div class="puesto">
+          <span class="pnum">${num}</span>
+          <span class="badge ${ocup?'ocup':'disp'}">${ocup?'OCUPADO':'DISPONIBLE'}</span>
+          <div class="pactions">
+            <button class="ghost sm" onclick="togglePuestoHist(${p.id})">📜</button>
+            <button class="ghost sm" onclick="renombrarPuesto(${p.id}, '${num}', ${id})">✏️</button>
+            ${ocup
+              ? `<button class="gold sm" onclick="liberarAdmin(${p.id}, ${id})">🔓 Liberar</button>`
+              : `<button class="green sm" onclick="ocuparAdmin(${p.id}, ${id})">🚗 Ocupar</button>`}
+            <button class="danger sm" onclick="eliminarPuesto(${p.id}, '${num}', ${id})">🗑</button>
+          </div>
         </div>
+        <div id="phist-${p.id}" class="box hidden" style="margin-top:6px"></div>
       </div>`;
     }).join('');
   }catch(e){ box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
@@ -292,6 +316,49 @@ async function eliminarPuesto(id, num, zonaId){
   if(!confirm(`¿Eliminar el puesto "${num}"? (se borra también su historial)`)) return;
   try{ await api('/api/v1/puestos/'+id,'DELETE'); msg($('globalMsg'),`Puesto "${esc(num)}" eliminado`,'ok'); await loadPuestos(zonaId); await updatePills(); }
   catch(e){ msg($('globalMsg'), e.message, 'err'); }
+}
+
+// ── Ranking e historial ──────────────────────────────────────────────────────
+function fmtHoras(h){ return h < 1 ? `${Math.round(h*60)} min` : `${h.toFixed(1)} h`; }
+function fmtFecha(s){ return s ? String(s).replace('T',' ').slice(0,16) : '—'; }
+
+async function loadRanking(){
+  const mes = $('rankMonth').value;
+  if(!mes){ msg($('rankMsg'),'Selecciona un mes','err'); return; }
+  msg($('rankMsg'),'',''); $('rankBody').innerHTML='<div class="muted">Cargando…</div>';
+  try{
+    const r = await api('/api/v1/historial/ranking/mensual?mes='+mes);
+    if(!r.length){ $('rankBody').innerHTML='<div class="muted">Sin datos para este mes.</div>'; return; }
+    $('rankBody').innerHTML = r.map(e=>{
+      const name = (e.fullName && e.fullName.trim() && e.fullName!==e.username) ? e.fullName : (e.username || 'Usuario PUCE');
+      const g = e.position<=3 ? 'g'+e.position : '';
+      const medal = e.position===1?'🥇':e.position===2?'🥈':e.position===3?'🥉':e.position;
+      return `<div class="rankrow">
+        <div class="rpos ${g}">${medal}</div>
+        <div><div class="rname">${esc(name)}</div><div class="hd" style="font-size:11px">${esc(e.username)}</div></div>
+        <div class="rmeta"><b>${fmtHoras(e.totalHours)}</b><br>${e.totalSessions} sesiones</div>
+      </div>`;
+    }).join('');
+  }catch(e){ $('rankBody').innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
+}
+
+async function togglePuestoHist(id){
+  const box=$('phist-'+id);
+  if(!box.classList.contains('hidden')){ hide(box); box.innerHTML=''; return; }
+  box.innerHTML='<div class="muted">Cargando…</div>'; show(box);
+  try{
+    const h = await api('/api/v1/historial/puesto/'+id);
+    box.innerHTML = h.length ? h.map(x=>{
+      const activo = !x.exitDate;
+      const user = x.username.startsWith('GUARDIA:') ? '👮 '+esc(x.username.slice(8)) : esc(x.username);
+      return `<div class="hrow">
+        <span class="hu">${user}</span>
+        <span class="hd">🟢 ${fmtFecha(x.entryDate)}</span>
+        <span class="hd">${activo?'⏳ activo':'🔴 '+fmtFecha(x.exitDate)}</span>
+        ${x.vehiclePlate?`<span class="hd">🚗 ${esc(x.vehiclePlate)}</span>`:''}
+      </div>`;
+    }).join('') : '<div class="muted">Sin historial para este puesto.</div>';
+  }catch(e){ box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
 }
 </script>
 </body>
