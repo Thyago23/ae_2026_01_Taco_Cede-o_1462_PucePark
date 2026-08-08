@@ -35,6 +35,7 @@ class SecurityConfig {
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/puestos", "/api/v1/puestos/zona/*").hasAnyRole("ADMIN", "GUARD", "USER")
                 auth.requestMatchers(HttpMethod.POST, "/api/v1/puestos").hasRole("ADMIN")
                 auth.requestMatchers(HttpMethod.PUT, "/api/v1/puestos/*").hasRole("ADMIN")
+                auth.requestMatchers(HttpMethod.DELETE, "/api/v1/puestos/*").hasRole("ADMIN")
                 // Historial y ranking
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/historial/me", "/api/v1/historial/me/estadisticas").hasAnyRole("ADMIN", "USER")
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/historial/guardia/me").hasAnyRole("ADMIN", "GUARD")

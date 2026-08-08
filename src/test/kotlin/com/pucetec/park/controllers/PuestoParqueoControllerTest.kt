@@ -136,6 +136,39 @@ class PuestoParqueoControllerTest {
     }
 
     @Test
+    fun `DELETE puestos sin token responde 401`() {
+        mockMvc.perform(delete("/api/v1/puestos/1"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `DELETE puestos con rol USER responde 403`() {
+        mockMvc.perform(
+            delete("/api/v1/puestos/1")
+                .with(jwt().authorities(SimpleGrantedAuthority("ROLE_USER")))
+        ).andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `DELETE puestos con rol ADMIN responde 204`() {
+        mockMvc.perform(
+            delete("/api/v1/puestos/1")
+                .with(jwt().authorities(SimpleGrantedAuthority("ROLE_ADMIN")))
+        ).andExpect(status().isNoContent)
+    }
+
+    @Test
+    fun `DELETE puestos responde 409 cuando el puesto esta ocupado`() {
+        whenever(puestoParqueoService.deletePuesto(any()))
+            .thenAnswer { throw SlotAlreadyOccupiedException("Puesto ocupado") }
+
+        mockMvc.perform(
+            delete("/api/v1/puestos/1")
+                .with(jwt().authorities(SimpleGrantedAuthority("ROLE_ADMIN")))
+        ).andExpect(status().isConflict)
+    }
+
+    @Test
     fun `PUT ocupar sin token responde 401`() {
         mockMvc.perform(put("/api/v1/puestos/1/ocupar"))
             .andExpect(status().isUnauthorized)
