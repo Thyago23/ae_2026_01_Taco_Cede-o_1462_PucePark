@@ -44,6 +44,13 @@ class PuestoParqueoController(
         return puestoParqueoService.updatePuesto(id, request)
     }
 
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun deletePuesto(@PathVariable id: Long) {
+        logger.info("DELETE /api/v1/puestos/$id")
+        puestoParqueoService.deletePuesto(id)
+    }
+
     @PutMapping("/{id}/ocupar")
     fun ocuparPuesto(
         @PathVariable id: Long,

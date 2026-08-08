@@ -73,6 +73,26 @@ class PuestoParqueoService(
     }
 
     @Transactional
+    fun deletePuesto(id: Long) {
+        logger.info("Deleting parking space id=$id...")
+        val puesto = puestoParqueoRepository.findById(id).orElseThrow {
+            PuestoParqueoNotFoundException("Parking space $id not found")
+        }
+        logger.info("Parking space id=$id found: '${puesto.numeroPuesto}'. Checking status...")
+        if (puesto.estado == EstadoPuesto.OCUPADO) {
+            logger.warn("Parking space id=$id is occupied and cannot be deleted.")
+            throw SlotAlreadyOccupiedException("Cannot delete parking space $id because it is occupied. Free it first.")
+        }
+        val historial = historialParqueoRepository.findByPuestoIdOrderByFechaIngresoDesc(id)
+        if (historial.isNotEmpty()) {
+            logger.info("Removing ${historial.size} history entry(ies) referencing space id=$id...")
+            historialParqueoRepository.deleteAll(historial)
+        }
+        puestoParqueoRepository.delete(puesto)
+        logger.info("Parking space id=$id deleted successfully.")
+    }
+
+    @Transactional
     fun getAllPuestos(): List<PuestoParqueoResponse> {
         logger.info("Loading all parking spaces...")
         val puestos = puestoParqueoRepository.findAll()
