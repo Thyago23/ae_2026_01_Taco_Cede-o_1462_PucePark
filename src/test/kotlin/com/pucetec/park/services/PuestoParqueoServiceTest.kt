@@ -221,6 +221,26 @@ class PuestoParqueoServiceTest {
     }
 
     @Test
+    fun `getMiPuestoActivo retorna el puesto cuando el usuario tiene uno activo`() {
+        val historial = HistorialParqueo(id = 1L, puesto = puestoOcupado, username = "jdoe")
+        whenever(historialParqueoRepository.findFirstByUsernameAndFechaSalidaIsNullOrderByFechaIngresoDesc("jdoe"))
+            .thenReturn(Optional.of(historial))
+
+        val result = puestoParqueoService.getMiPuestoActivo("jdoe")
+
+        assertEquals("A02", result?.spaceNumber)
+        assertEquals(EstadoPuesto.OCUPADO, result?.status)
+    }
+
+    @Test
+    fun `getMiPuestoActivo retorna null cuando el usuario no tiene puesto activo`() {
+        whenever(historialParqueoRepository.findFirstByUsernameAndFechaSalidaIsNullOrderByFechaIngresoDesc("jdoe"))
+            .thenReturn(Optional.empty())
+
+        assertNull(puestoParqueoService.getMiPuestoActivo("jdoe"))
+    }
+
+    @Test
     fun `deletePuesto elimina el puesto y su historial cuando esta disponible`() {
         val historial = HistorialParqueo(id = 1L, puesto = puestoDisponible, username = "jdoe")
         whenever(puestoParqueoRepository.findById(1L)).thenReturn(Optional.of(puestoDisponible))

@@ -92,6 +92,20 @@ class PuestoParqueoService(
         logger.info("Parking space id=$id deleted successfully.")
     }
 
+    @Transactional(readOnly = true)
+    fun getMiPuestoActivo(username: String): PuestoParqueoResponse? {
+        logger.info("Loading active parking space for user '$username'...")
+        val activo = historialParqueoRepository
+            .findFirstByUsernameAndFechaSalidaIsNullOrderByFechaIngresoDesc(username)
+        if (activo.isEmpty) {
+            logger.info("User '$username' has no active parking space.")
+            return null
+        }
+        val puesto = activo.get().puesto!!
+        logger.info("User '$username' currently occupies space id=${puesto.id} ('${puesto.numeroPuesto}').")
+        return puesto.toResponse()
+    }
+
     @Transactional
     fun getAllPuestos(): List<PuestoParqueoResponse> {
         logger.info("Loading all parking spaces...")

@@ -8,6 +8,7 @@ import com.pucetec.park.dto.UpdatePuestoParqueoRequest
 import com.pucetec.park.services.PuestoParqueoService
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.*
@@ -29,6 +30,14 @@ class PuestoParqueoController(
     fun getPuestosByZona(@PathVariable zonaId: Long): List<PuestoParqueoResponse> {
         logger.info("GET /api/v1/puestos/zona/$zonaId")
         return puestoParqueoService.getPuestosByZona(zonaId)
+    }
+
+    @GetMapping("/mi-puesto")
+    fun getMiPuesto(@AuthenticationPrincipal jwt: Jwt): ResponseEntity<PuestoParqueoResponse> {
+        val username = jwt.getClaimAsString("username") ?: jwt.getClaimAsString("cognito:username") ?: jwt.subject
+        logger.info("GET /api/v1/puestos/mi-puesto - username=$username")
+        val puesto = puestoParqueoService.getMiPuestoActivo(username)
+        return if (puesto == null) ResponseEntity.noContent().build() else ResponseEntity.ok(puesto)
     }
 
     @PostMapping
