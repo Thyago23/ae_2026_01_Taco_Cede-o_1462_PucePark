@@ -75,13 +75,3 @@
 | **Punto de equilibrio** | ~**mes 14–15** (o antes con un 2.º campus) |
 
 **Análisis:** el modelo B2B se vuelve rentable al sumar campus (el costo marginal por campus adicional es bajo gracias a la arquitectura multi-servicio en contenedores). Con 3 campus el resultado del año 1 ya sería positivo (ingresos ≈ $15,900 vs costos ≈ $3,000 + $4,500).
-
----
-
-### Cómo exportar a PDF
-```bash
-# con pandoc (si lo tienes instalado)
-cd docs
-pandoc 01-analisis-sistemas.md 02-computacion-nube.md 03-emprendimiento.md \
-  -o PucePark-documentacion.pdf
-```
