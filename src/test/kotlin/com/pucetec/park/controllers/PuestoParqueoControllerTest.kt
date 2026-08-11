@@ -136,6 +136,29 @@ class PuestoParqueoControllerTest {
     }
 
     @Test
+    fun `GET mi-puesto con puesto activo responde 200`() {
+        whenever(puestoParqueoService.getMiPuestoActivo(any())).thenReturn(puestoOcupadoResponse)
+
+        mockMvc.perform(get("/api/v1/puestos/mi-puesto").with(jwt().authorities(SimpleGrantedAuthority("ROLE_USER"))))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.status").value("OCUPADO"))
+    }
+
+    @Test
+    fun `GET mi-puesto sin puesto activo responde 204`() {
+        whenever(puestoParqueoService.getMiPuestoActivo(any())).thenReturn(null)
+
+        mockMvc.perform(get("/api/v1/puestos/mi-puesto").with(jwt().authorities(SimpleGrantedAuthority("ROLE_USER"))))
+            .andExpect(status().isNoContent)
+    }
+
+    @Test
+    fun `GET mi-puesto sin token responde 401`() {
+        mockMvc.perform(get("/api/v1/puestos/mi-puesto"))
+            .andExpect(status().isUnauthorized)
+    }
+
+    @Test
     fun `DELETE puestos sin token responde 401`() {
         mockMvc.perform(delete("/api/v1/puestos/1"))
             .andExpect(status().isUnauthorized)

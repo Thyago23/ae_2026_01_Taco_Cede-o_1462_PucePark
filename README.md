@@ -90,6 +90,7 @@ Todos los endpoints requieren **JWT de Cognito** (salvo `/actuator/health`). El 
 | Método | Ruta | Roles |
 |---|---|---|
 | GET | `/api/v1/puestos`, `/api/v1/puestos/zona/{zonaId}` | ADMIN, GUARD, USER |
+| GET | `/api/v1/puestos/mi-puesto` (puesto activo del usuario; 204 si ninguno) | ADMIN, GUARD, USER |
 | POST | `/api/v1/puestos` | ADMIN |
 | PUT | `/api/v1/puestos/{id}` (renombrar) | ADMIN |
 | DELETE | `/api/v1/puestos/{id}` | ADMIN |

@@ -32,6 +32,7 @@ class SecurityConfig {
                 // Puestos — acciones de estado primero (más específicas)
                 auth.requestMatchers(HttpMethod.PUT, "/api/v1/puestos/*/forzar-liberacion", "/api/v1/puestos/*/forzar-ocupacion").hasAnyRole("ADMIN", "GUARD")
                 auth.requestMatchers(HttpMethod.PUT, "/api/v1/puestos/*/ocupar", "/api/v1/puestos/*/liberar").hasAnyRole("ADMIN", "GUARD", "USER")
+                auth.requestMatchers(HttpMethod.GET, "/api/v1/puestos/mi-puesto").hasAnyRole("ADMIN", "GUARD", "USER")
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/puestos", "/api/v1/puestos/zona/*").hasAnyRole("ADMIN", "GUARD", "USER")
                 auth.requestMatchers(HttpMethod.POST, "/api/v1/puestos").hasRole("ADMIN")
                 auth.requestMatchers(HttpMethod.PUT, "/api/v1/puestos/*").hasRole("ADMIN")

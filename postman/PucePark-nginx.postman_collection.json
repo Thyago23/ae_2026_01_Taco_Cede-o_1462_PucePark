@@ -6,17 +6,55 @@
   },
   "auth": {
     "type": "bearer",
-    "bearer": [{ "key": "token", "value": "{{idToken}}", "type": "string" }]
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{idToken}}",
+        "type": "string"
+      }
+    ]
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost", "type": "string" },
-    { "key": "cognitoUrl", "value": "https://cognito-idp.us-east-1.amazonaws.com/", "type": "string" },
-    { "key": "clientId", "value": "4vhmgbe076v27ub5mu9ru8jo8l", "type": "string" },
-    { "key": "username", "value": "", "type": "string" },
-    { "key": "password", "value": "", "type": "string" },
-    { "key": "idToken", "value": "", "type": "string" },
-    { "key": "accessToken", "value": "", "type": "string" },
-    { "key": "mes", "value": "2026-08", "type": "string" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost",
+      "type": "string"
+    },
+    {
+      "key": "cognitoUrl",
+      "value": "https://cognito-idp.us-east-1.amazonaws.com/",
+      "type": "string"
+    },
+    {
+      "key": "clientId",
+      "value": "4vhmgbe076v27ub5mu9ru8jo8l",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "mes",
+      "value": "2026-08",
+      "type": "string"
+    }
   ],
   "item": [
     {
@@ -45,17 +83,30 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/x-amz-json-1.1" },
-              { "key": "X-Amz-Target", "value": "AWSCognitoIdentityProviderService.InitiateAuth" }
+              {
+                "key": "Content-Type",
+                "value": "application/x-amz-json-1.1"
+              },
+              {
+                "key": "X-Amz-Target",
+                "value": "AWSCognitoIdentityProviderService.InitiateAuth"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"AuthFlow\": \"USER_PASSWORD_AUTH\",\n  \"ClientId\": \"{{clientId}}\",\n  \"AuthParameters\": {\n    \"USERNAME\": \"{{username}}\",\n    \"PASSWORD\": \"{{password}}\"\n  }\n}"
             },
-            "url": { "raw": "{{cognitoUrl}}", "host": ["{{cognitoUrl}}"] },
+            "url": {
+              "raw": "{{cognitoUrl}}",
+              "host": [
+                "{{cognitoUrl}}"
+              ]
+            },
             "description": "Autentica contra AWS Cognito (USER_PASSWORD_AUTH). Va DIRECTO a Cognito, no por nginx. Rellena {{username}} y {{password}} en las variables de la colección. El script de test guarda el IdToken automáticamente."
           }
         }
@@ -69,7 +120,17 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/v1/zonas", "host": ["{{baseUrl}}"], "path": ["api", "v1", "zonas"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zonas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zonas"
+              ]
+            },
             "description": "Lista todas las zonas. Roles: USER, GUARD, ADMIN."
           }
         },
@@ -78,7 +139,19 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/v1/zonas/1/estadisticas", "host": ["{{baseUrl}}"], "path": ["api", "v1", "zonas", "1", "estadisticas"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zonas/1/estadisticas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zonas",
+                "1",
+                "estadisticas"
+              ]
+            },
             "description": "Estadísticas (disponibles/ocupados) de la zona {id}. Roles: USER, GUARD, ADMIN."
           }
         },
@@ -86,9 +159,27 @@
           "name": "POST crear zona (ADMIN)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Zona D\",\n  \"description\": \"Zona oeste - coliseo\",\n  \"maxCapacity\": 30,\n  \"location\": \"Bloque D, subsuelo\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/v1/zonas", "host": ["{{baseUrl}}"], "path": ["api", "v1", "zonas"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Zona D\",\n  \"description\": \"Zona oeste - coliseo\",\n  \"maxCapacity\": 30,\n  \"location\": \"Bloque D, subsuelo\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zonas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zonas"
+              ]
+            },
             "description": "Crea una zona. Solo ADMIN. Body: name, description?, maxCapacity, location?."
           }
         },
@@ -96,9 +187,28 @@
           "name": "PUT actualizar zona (ADMIN)",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Zona A\",\n  \"description\": \"Zona norte - edificio principal\",\n  \"maxCapacity\": 30,\n  \"location\": \"Bloque A, planta baja\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/v1/zonas/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "zonas", "1"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Zona A\",\n  \"description\": \"Zona norte - edificio principal\",\n  \"maxCapacity\": 30,\n  \"location\": \"Bloque A, planta baja\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zonas/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zonas",
+                "1"
+              ]
+            },
             "description": "Actualiza la zona {id}. Solo ADMIN."
           }
         },
@@ -107,7 +217,18 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/v1/zonas/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "zonas", "1"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zonas/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "zonas",
+                "1"
+              ]
+            },
             "description": "Elimina la zona {id}. Solo ADMIN. Devuelve 204."
           }
         }
@@ -121,7 +242,17 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/v1/puestos", "host": ["{{baseUrl}}"], "path": ["api", "v1", "puestos"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/puestos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "puestos"
+              ]
+            },
             "description": "Lista todos los puestos. Roles: USER, GUARD, ADMIN."
           }
         },
@@ -130,17 +261,68 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/v1/puestos/zona/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "puestos", "zona", "1"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/puestos/zona/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "puestos",
+                "zona",
+                "1"
+              ]
+            },
             "description": "Puestos de la zona {zonaId}. Roles: USER, GUARD, ADMIN."
           }
+        },
+        {
+          "name": "GET mi puesto activo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/puestos/mi-puesto",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "puestos",
+                "mi-puesto"
+              ]
+            },
+            "description": "Devuelve el puesto que el usuario tiene ocupado actualmente (200), o 204 si no tiene ninguno. Roles: USER, GUARD, ADMIN."
+          },
+          "response": []
         },
         {
           "name": "POST crear puesto (ADMIN)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"zoneId\": 1,\n  \"spaceNumber\": \"A-31\",\n  \"row\": \"D\",\n  \"order\": 31\n}" },
-            "url": { "raw": "{{baseUrl}}/api/v1/puestos", "host": ["{{baseUrl}}"], "path": ["api", "v1", "puestos"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"zoneId\": 1,\n  \"spaceNumber\": \"A-31\",\n  \"row\": \"D\",\n  \"order\": 31\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/puestos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "puestos"
+              ]
+            },
             "description": "Crea un puesto. Solo ADMIN. Body: zoneId, spaceNumber, row, order."
           }
         },
@@ -148,9 +330,28 @@
           "name": "PUT actualizar puesto (ADMIN)",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"spaceNumber\": \"A-01\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/v1/puestos/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "puestos", "1"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"spaceNumber\": \"A-01\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/puestos/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "puestos",
+                "1"
+              ]
+            },
             "description": "Renombra el puesto {id}. Solo ADMIN. Body: spaceNumber."
           }
         },
@@ -159,7 +360,19 @@
           "request": {
             "method": "PUT",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/v1/puestos/1/ocupar", "host": ["{{baseUrl}}"], "path": ["api", "v1", "puestos", "1", "ocupar"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/puestos/1/ocupar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "puestos",
+                "1",
+                "ocupar"
+              ]
+            },
             "description": "El estudiante ocupa el puesto {id}. El usuario se toma del JWT. Roles: USER, GUARD, ADMIN."
           }
         },
@@ -168,7 +381,19 @@
           "request": {
             "method": "PUT",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/v1/puestos/1/liberar", "host": ["{{baseUrl}}"], "path": ["api", "v1", "puestos", "1", "liberar"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/puestos/1/liberar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "puestos",
+                "1",
+                "liberar"
+              ]
+            },
             "description": "El estudiante libera su puesto {id}. Roles: USER, GUARD, ADMIN."
           }
         },
@@ -177,7 +402,19 @@
           "request": {
             "method": "PUT",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/v1/puestos/1/forzar-liberacion", "host": ["{{baseUrl}}"], "path": ["api", "v1", "puestos", "1", "forzar-liberacion"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/puestos/1/forzar-liberacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "puestos",
+                "1",
+                "forzar-liberacion"
+              ]
+            },
             "description": "El guardia fuerza la liberación del puesto {id}. Roles: GUARD, ADMIN."
           }
         },
@@ -185,9 +422,29 @@
           "name": "PUT forzar ocupación (GUARD)",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"vehiclePlate\": \"PDY-1234\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/v1/puestos/1/forzar-ocupacion", "host": ["{{baseUrl}}"], "path": ["api", "v1", "puestos", "1", "forzar-ocupacion"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehiclePlate\": \"PDY-1234\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/puestos/1/forzar-ocupacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "puestos",
+                "1",
+                "forzar-ocupacion"
+              ]
+            },
             "description": "El guardia registra entrada manual en el puesto {id}. Roles: GUARD, ADMIN. Body: vehiclePlate."
           }
         }
@@ -201,7 +458,18 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/v1/historial/me", "host": ["{{baseUrl}}"], "path": ["api", "v1", "historial", "me"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/historial/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "historial",
+                "me"
+              ]
+            },
             "description": "Historial del usuario actual (del JWT). Roles: USER, ADMIN."
           }
         },
@@ -210,7 +478,25 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/v1/historial/me/estadisticas?mes={{mes}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "historial", "me", "estadisticas"], "query": [{ "key": "mes", "value": "{{mes}}" }] },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/historial/me/estadisticas?mes={{mes}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "historial",
+                "me",
+                "estadisticas"
+              ],
+              "query": [
+                {
+                  "key": "mes",
+                  "value": "{{mes}}"
+                }
+              ]
+            },
             "description": "Estadísticas personales del mes (formato YYYY-MM). Roles: USER, ADMIN."
           }
         },
@@ -219,7 +505,19 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/v1/historial/guardia/me", "host": ["{{baseUrl}}"], "path": ["api", "v1", "historial", "guardia", "me"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/historial/guardia/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "historial",
+                "guardia",
+                "me"
+              ]
+            },
             "description": "Registros hechos por el guardia actual. Roles: GUARD, ADMIN."
           }
         },
@@ -228,7 +526,19 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/v1/historial/puesto/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "historial", "puesto", "1"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/historial/puesto/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "historial",
+                "puesto",
+                "1"
+              ]
+            },
             "description": "Historial de un puesto {puestoId}. Roles: GUARD, ADMIN."
           }
         },
@@ -237,7 +547,25 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/v1/historial/ranking/mensual?mes={{mes}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "historial", "ranking", "mensual"], "query": [{ "key": "mes", "value": "{{mes}}" }] },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/historial/ranking/mensual?mes={{mes}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "historial",
+                "ranking",
+                "mensual"
+              ],
+              "query": [
+                {
+                  "key": "mes",
+                  "value": "{{mes}}"
+                }
+              ]
+            },
             "description": "Ranking del mes (formato YYYY-MM). Roles: USER, GUARD, ADMIN."
           }
         }
@@ -251,7 +579,16 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] },
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
             "description": "users-service vía nginx. Perfil del usuario (sub del JWT). Requiere JWT válido."
           }
         },
@@ -260,7 +597,17 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/users/me/estado", "host": ["{{baseUrl}}"], "path": ["users", "me", "estado"] },
+            "url": {
+              "raw": "{{baseUrl}}/users/me/estado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "estado"
+              ]
+            },
             "description": "users-service vía nginx. Estado del perfil. Requiere JWT válido."
           }
         },
@@ -268,9 +615,26 @@
           "name": "PUT actualizar usuario",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"Bryan Taco\",\n  \"vehiclePlate\": \"PDY-1923\",\n  \"permitNumber\": \"09783\",\n  \"darkMode\": true\n}" },
-            "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Bryan Taco\",\n  \"vehiclePlate\": \"PDY-1923\",\n  \"permitNumber\": \"09783\",\n  \"darkMode\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
             "description": "users-service vía nginx. Actualiza el perfil (único dueño de perfiles tras el refactor). Body: fullName, vehiclePlate, permitNumber?, darkMode."
           }
         }

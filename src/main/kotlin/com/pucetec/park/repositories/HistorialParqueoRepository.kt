@@ -21,6 +21,7 @@ interface RankingProjection {
 interface HistorialParqueoRepository : JpaRepository<HistorialParqueo, Long> {
 
     fun findFirstByPuestoIdAndFechaSalidaIsNullOrderByFechaIngresoDesc(puestoId: Long): Optional<HistorialParqueo>
+    fun findFirstByUsernameAndFechaSalidaIsNullOrderByFechaIngresoDesc(username: String): Optional<HistorialParqueo>
     fun findByUsernameOrderByFechaIngresoDesc(username: String): List<HistorialParqueo>
     fun findByPuestoIdOrderByFechaIngresoDesc(puestoId: Long): List<HistorialParqueo>
     fun existsByUsernameAndFechaSalidaIsNull(username: String): Boolean
