@@ -22,7 +22,7 @@ Sistema de gestión de parqueaderos universitarios (app móvil + backend de micr
 | RF-11 | Consultar estadísticas personales mensuales (horas, sesiones, racha). | Estudiante | Baja |
 | RF-12 | Consultar el ranking mensual de usuarios por horas acumuladas. | Estudiante, Guardia | Baja |
 | RF-13 | Editar el perfil (ícono de lápiz) y ver los datos personales. | Estudiante, Guardia | Media |
-| RF-14 | Administrar zonas y puestos (crear, actualizar, eliminar). | Admin | Media |
+| RF-14 | Administrar zonas y puestos (crear, actualizar, eliminar) desde un **panel web de administración** (servido por nginx en `/admin/`). | Admin | Media |
 | RF-15 | Restringir acciones según rol; un usuario sin permiso recibe 401/403. | Sistema | Alta |
 | RF-16 | Cerrar sesión y volver a iniciar sin residuos de sesión previa. | Estudiante, Guardia | Media |
 

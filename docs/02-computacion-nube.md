@@ -35,7 +35,7 @@ Sistema **multicapa y multiplataforma** orquestado con `docker-compose` (5 conte
 
 | Servicio | Imagen/Build | Rol | Puerto |
 |---|---|---|---|
-| `nginx` | nginx:alpine | Reverse proxy / punto de entrada único | **80 → host** |
+| `nginx` | nginx:alpine | Reverse proxy + panel web `/admin/` · punto de entrada único | **80 → host** |
 | `park-app` | build (Spring Boot/Kotlin) | API de parqueo (`/api/*`) | 8080 (interno) |
 | `users-service` | build (Spring Boot/Kotlin) | Microservicio de perfiles (`/users/*`) | 8686 (interno) |
 | `db_park` | postgres:16-alpine | BD del parqueo (`puce_park`) | 5434 → host |
@@ -87,9 +87,30 @@ Características de infraestructura implementadas:
 - **Seguridad perimetral**: solo nginx queda expuesto; las BDs y servicios no son accesibles directamente desde fuera (los puertos 5434/5435 se publican solo para inspección en desarrollo).
 - **Preparado para la nube**: este `docker-compose` puede desplegarse en una instancia **IaaS** (AWS EC2 / GCP Compute Engine) tal cual, o migrarse a un orquestador (ECS/Kubernetes) para escalamiento horizontal real replicando `park-app`/`users-service`.
 
-## 4. Ventajas del enfoque para la nube
+## 4. Despliegue realizado en AWS (evidencia · criterio 4.3)
 
-- **Reproducibilidad**: `docker-compose up -d --build` levanta todo el sistema en cualquier host con Docker.
+El sistema **no solo está preparado** para la nube: se desplegó efectivamente en **AWS**.
+
+### Backend en EC2 (IaaS)
+- Instancia **Amazon EC2** (Amazon Linux 2023, `t3.small`) — modelo **IaaS**.
+- Arranque automatizado con **User Data** (`cloud/ec2/user-data.sh`): instala Docker + Compose, clona el repositorio y ejecuta `docker compose up -d --build` (los 5 contenedores).
+- **Security Group**: solo `80` (HTTP público) y `22` (SSH restringido a la IP del equipo); las BDs quedan internas.
+- Verificación en vivo:
+  - `http://<IP-EC2>/api/v1/zonas` → **401** (park-app responde, requiere token).
+  - `http://<IP-EC2>/users/me` → **401** (users-service responde).
+  - `http://<IP-EC2>/admin/` → **panel web de administración** servido desde la nube.
+- Guía completa: `cloud/ec2/README-ec2.md`.
+
+### Página de descarga en S3 (almacenamiento en la nube)
+- Bucket **Amazon S3** configurado como *static website hosting* con la página de descarga de la app (iOS/APK).
+- Guía: `cloud/README-despliegue-s3.md`.
+
+### Panel web de administración (cliente adicional en la nube)
+El mismo nginx sirve, en `/admin/`, un panel web estático donde el **administrador** inicia sesión con Cognito y gestiona zonas, puestos, ranking e historial — demostrando **un backend, dos clientes** (app iOS + panel web) sobre la misma infraestructura.
+
+## 5. Ventajas del enfoque para la nube
+
+- **Reproducibilidad**: `docker-compose up -d --build` levanta todo el sistema en cualquier host con Docker (probado en local y en EC2).
 - **Elasticidad**: servicios stateless → réplicas horizontales bajo nginx.
 - **Costo**: contenedores livianos (alpine) → menor consumo que VMs completas.
 - **Portabilidad multiplataforma**: mismas imágenes en local, IaaS o nube pública.

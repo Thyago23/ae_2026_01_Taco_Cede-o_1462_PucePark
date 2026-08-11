@@ -1,75 +1,139 @@
-# PUCE-Park Backend
+# PucePark — Backend de Microservicios
 
-Bienvenido al repositorio del backend de PUCE-Park, un sistema diseñado para la gestion de zonas y puestos de parqueo. Este proyecto ha sido desarrollado siguiendo una arquitectura limpia y modular utilizando Kotlin y Spring Boot 3.
+Sistema de gestión de parqueaderos universitarios (Proyecto Integrador P02 · PUCE TEC).
+Backend de **microservicios** en Spring Boot 4 + Kotlin, con **app móvil iOS** y **panel web** de administración como clientes.
 
-## Tecnologias Principales
-- Lenguaje: Kotlin
-- Framework: Spring Boot 3
-- Base de Datos: PostgreSQL
-- Seguridad: Spring Security con OAuth2 Resource Server (Validacion de AWS Cognito JWT)
-- Despliegue Local: Docker y Docker Compose
-- Pruebas: JUnit 5 y MockK
+- **App iOS (frontend):** https://github.com/BryanTaco/PuceParkFront
+- **Panel web admin:** servido por nginx en `/admin/` (incluido en este repo, carpeta `webadmin/`).
 
-## Estructura del Proyecto
+---
 
-El proyecto se encuentra organizado en paquetes que respetan la separacion de responsabilidades:
+## Arquitectura
 
-- controller: Controladores REST que exponen la API. Unicamente utilizan DTOs y delegan la logica a los servicios.
-- service: Interfaces e implementaciones con toda la logica de negocio y el control transaccional (@Transactional).
-- repository: Interfaces de Spring Data JPA, incluyendo consultas especificas y bloqueo pesimista (Pessimistic Locking).
-- dto: Data Transfer Objects utilizados para manejar la informacion entrante (Requests) y saliente (Responses).
-- mapper: Componentes dedicados a la conversion entre entidades de dominio y DTOs.
-- entity: Entidades JPA que mapean el modelo de base de datos.
-- exception: Clases de excepcion personalizadas y un manejador global (@RestControllerAdvice) para centralizar la respuesta de errores HTTP.
+```
+                         AWS Cognito (User Pool + JWKS)  ── emite y firma los JWT
+                                        │
+   ┌──────────┐   ┌──────────────┐      │ token
+   │  App iOS │   │  Panel web    │ ─────┘
+   │ (cliente)│   │  /admin/      │
+   └────┬─────┘   └──────┬────────┘
+        └──────HTTP :80──►│  nginx (reverse proxy · punto de entrada único)
+                          ├── /api/*    → park-app      (:8080)  ── JDBC ─► db_park  (puce_park)
+                          ├── /users/*  → users-service (:8686)  ── JDBC ─► db_micro (puce_micro)
+                          └── /admin/   → panel web estático
+```
 
-## Requisitos Previos
+- **park-app** — dominio de parqueo: zonas, puestos, historial, ranking (`/api/v1/*`).
+- **users-service** — dominio de identidad: perfiles de usuario (`/users/*`).
+- **Base de datos por servicio** (aislamiento): `puce_park` y `puce_micro`, sin *joins* cruzados.
+- **Sin llamadas entre servicios:** cada uno valida el JWT de Cognito por su cuenta (Resource Server).
 
-1. Instalacion de Docker Desktop o Docker Engine.
-2. (Opcional) Java 17 y un entorno de desarrollo integrado (IDE) como IntelliJ IDEA o Eclipse, en caso de requerir desarrollo local.
+## Tecnologías
 
-## Instrucciones de Ejecucion Local
+| Área | Tecnología |
+|---|---|
+| Lenguaje / JVM | Kotlin 2.2 · **Java 21** |
+| Framework | **Spring Boot 4.0.6** (Web, Data JPA, Security, OAuth2 Resource Server, Validation, Actuator) |
+| Base de datos | PostgreSQL 16 (una por servicio) |
+| Seguridad | AWS Cognito (JWT) · roles vía claim `cognito:groups` |
+| Gateway | nginx (reverse proxy, único puerto expuesto: 80) |
+| Pruebas | JUnit 5 · **mockito-kotlin** · MockMvc · **JaCoCo** (cobertura) |
+| Contenedores | Docker · docker-compose (5 servicios) |
+| Nube | AWS **EC2** (backend, IaaS) · AWS **S3** (página de descarga) |
 
-Existen dos alternativas para levantar el proyecto en un ambiente local:
+## Estructura (por servicio, arquitectura en capas)
 
-### Opcion A: Levantar infraestructura completa (Base de datos y Backend)
-Ideal para realizar pruebas directamente contra la API sin compilar el proyecto en un IDE local. Desde la raiz del proyecto, ejecutar:
+`controllers/` (REST, delega al service) · `services/` (lógica + `@Transactional`) · `repositories/` (Spring Data JPA, bloqueo pesimista) · `dto/` · `mappers/` · `entities/` · `exceptions/` (una por archivo + `GlobalExceptionHandler`) · `config/` (SecurityConfig, DataInitializer).
+
+---
+
+## Ejecución local (todo el stack)
+
+Requisito: Docker Desktop / Docker Engine.
 
 ```bash
 docker-compose up -d --build
 ```
 
-La API quedara expuesta en: http://localhost:8080
+Levanta los 5 contenedores. Punto de entrada único: **http://localhost** (nginx, puerto 80).
 
-### Opcion B: Levantar unicamente la base de datos (Para desarrollo)
-Ideal para continuar con el desarrollo del backend. Este comando levantara unicamente PostgreSQL:
+- `http://localhost/api/v1/zonas`  → 401 (requiere token)
+- `http://localhost/users/me`       → 401 (requiere token)
+- `http://localhost/admin/`         → panel web de administración
+
+> Las BDs publican 5434 (puce_park) y 5435 (puce_micro) solo para inspección en desarrollo; en producción quedan internas.
+
+## Pruebas
 
 ```bash
-docker-compose up -d db
+./gradlew test                 # park-app
+cd users-service && ./gradlew test   # users-service
 ```
+Incluye pruebas de **services** (Mockito), **controllers** (MockMvc + JWT, validación de roles) y **GlobalExceptionHandler** (rama de mensaje por defecto para JaCoCo).
 
-Una vez que el contenedor de PostgreSQL este en ejecucion, puede abrir el proyecto en su IDE de preferencia, sincronizar las dependencias de Gradle e iniciar el servicio ejecutando la clase principal `PuceParkApplication.kt`. El backend se conectara automaticamente a la base de datos local en el puerto 5432 con las credenciales por defecto (postgres / password).
+---
 
-## Documentacion de la API (Endpoints y Roles)
+## API — Endpoints y roles
 
-La API cuenta con una configuracion CORS permisiva para integraciones con clientes frontend y dispositivos moviles. El control de acceso se basa en los roles emitidos en los JWT de AWS Cognito a traves del claim `cognito:groups`.
+Todos los endpoints requieren **JWT de Cognito** (salvo `/actuator/health`). El rol se toma del claim `cognito:groups` → `ROLE_ADMIN`, `ROLE_GUARD`, `ROLE_USER`.
 
-### Endpoints Publicos (Sin token requerido)
-- GET /api/v1/zonas : Retorna la lista de todas las zonas de parqueo disponibles.
-- GET /api/v1/puestos/zona/{zonaId} : Retorna la lista de puestos asociados a una zona especifica.
+### Zonas (`/api/v1/zonas`)
+| Método | Ruta | Roles |
+|---|---|---|
+| GET | `/api/v1/zonas` | ADMIN, GUARD, USER |
+| GET | `/api/v1/zonas/{id}/estadisticas` | ADMIN, GUARD, USER |
+| POST | `/api/v1/zonas` | ADMIN |
+| PUT | `/api/v1/zonas/{id}` | ADMIN |
+| DELETE | `/api/v1/zonas/{id}` | ADMIN |
 
-### Endpoints para el Rol DRIVER
-- POST /api/v1/puestos/{id}/ocupar : Ocupa un puesto de parqueo disponible, generando un registro de historial.
-- POST /api/v1/puestos/{id}/liberar : Libera un puesto de parqueo. Solo es valido si el puesto fue ocupado por el mismo usuario autenticado.
-- GET /api/v1/perfil/me : Retorna la informacion del perfil del usuario autenticado.
-- PUT /api/v1/perfil/me : Actualiza los detalles del perfil del usuario (por ejemplo, modo oscuro, placa del vehiculo).
+### Puestos (`/api/v1/puestos`)
+| Método | Ruta | Roles |
+|---|---|---|
+| GET | `/api/v1/puestos`, `/api/v1/puestos/zona/{zonaId}` | ADMIN, GUARD, USER |
+| POST | `/api/v1/puestos` | ADMIN |
+| PUT | `/api/v1/puestos/{id}` (renombrar) | ADMIN |
+| DELETE | `/api/v1/puestos/{id}` | ADMIN |
+| PUT | `/api/v1/puestos/{id}/ocupar` | ADMIN, GUARD, USER |
+| PUT | `/api/v1/puestos/{id}/liberar` | ADMIN, GUARD, USER |
+| PUT | `/api/v1/puestos/{id}/forzar-ocupacion` | ADMIN, GUARD |
+| PUT | `/api/v1/puestos/{id}/forzar-liberacion` | ADMIN, GUARD |
 
-### Endpoints para el Rol GUARD
-- PATCH /api/v1/puestos/{id}/forzar-liberacion : Permite liberar cualquier puesto ocupado, ignorando la validacion de propiedad del registro (orientado a administracion fisica del parqueo).
+### Historial y ranking (`/api/v1/historial`)
+| Método | Ruta | Roles |
+|---|---|---|
+| GET | `/api/v1/historial/me`, `/me/estadisticas?mes=YYYY-MM` | ADMIN, USER |
+| GET | `/api/v1/historial/guardia/me` | ADMIN, GUARD |
+| GET | `/api/v1/historial/ranking/mensual?mes=YYYY-MM` | ADMIN, GUARD, USER |
+| GET | `/api/v1/historial/puesto/{id}` | ADMIN, GUARD |
 
-### Endpoints para el Rol ADMIN
-- POST, PUT, DELETE /api/v1/zonas : Administracion del CRUD de Zonas.
-- POST, PUT, DELETE /api/v1/puestos : Administracion del CRUD de Puestos de parqueo.
+### Perfiles — users-service (`/users`)
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/users/me` | Perfil del usuario autenticado |
+| PUT | `/users/me` | Crear/actualizar perfil (onboarding, edición) |
 
-## Detalles Tecnicos Importantes
-- Bloqueo Pesimista (Pessimistic Locking): Se implemento `@Lock(LockModeType.PESSIMISTIC_WRITE)` en la tabla de puestos de parqueo para mitigar condiciones de carrera en el evento en el que dos usuarios intenten ocupar un mismo puesto simultaneamente.
-- Manejo de Errores Estandarizado: Cualquier regla de negocio rota devuelve estructuras JSON consistentes y codigos HTTP semanticos (200, 201, 204, 400, 401, 403, 404, 409).
+**Errores estandarizados:** `GlobalExceptionHandler` devuelve `{ message, source }` con códigos HTTP semánticos (400, 401, 403, 404, 409). **Concurrencia:** bloqueo pesimista al ocupar un puesto para evitar doble ocupación.
+
+---
+
+## Panel web de administración (`/admin/`)
+
+Página estática servida por el mismo nginx. El administrador inicia sesión con Cognito (solo grupo **ADMIN**) y gestiona todo desde el navegador: crear/editar/eliminar **zonas**, crear/renombrar/eliminar **puestos**, forzar ocupación/liberación, y ver **ranking mensual** e **historial por puesto**.
+
+## Despliegue en la nube
+
+- **EC2 (IaaS):** `cloud/ec2/user-data.sh` instala Docker, clona el repo y levanta el stack. Ver `cloud/ec2/README-ec2.md`.
+- **S3 (página de descarga):** app iOS/APK. Ver `cloud/README-despliegue-s3.md`.
+
+## Documentación del proyecto
+
+En `docs/` (Markdown + PDF en `docs/pdf/`):
+- `01-analisis-sistemas.md` — RF/RNF, casos de uso, GitFlow, pruebas, ADR.
+- `02-computacion-nube.md` — conceptos cloud, contenedores, arquitectura de infraestructura.
+- `03-emprendimiento.md` — Business Model Canvas, propuesta tecnológica, financiero.
+- `04-historias-usuario.md` — backlog (HU + criterios de aceptación).
+- `pucepark-historias-jira.csv` — importable a Jira.
+
+## Colección Postman
+
+En `postman/` — colección y entorno apuntando a nginx (`http://localhost`).
